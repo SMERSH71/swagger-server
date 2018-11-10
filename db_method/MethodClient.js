@@ -13,6 +13,6 @@ exports.insertDialog = function (knex, dialog) {
 };
 
 // Обновить id диалога заявки с заданным id клиента
-exports.updRequestDlg = function(knex, dlg_id, rqt_id) {
+exports.updRequestDlg = function (knex, dlg_id, rqt_id) {
     return knex('request').update('dlg_id', dlg_id).where('rqt_id', rqt_id).returning('dlg_id');
 };

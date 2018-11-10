@@ -22,25 +22,158 @@ exports.publicGetImg = function (imgName) {
  * returns inline_response_200_2
  **/
 exports.getDialogInfo = function (body) {
+    const TAG = "getDialogInfo";
+
     return new Promise(function (resolve, reject) {
-        const examples = {};
-        examples['application/json'] = {
-            "last_msg": {
-                "msg_text": "Здравстуйте! Подскажите, пожалуйста, лучший наркологический диспансер в Липецке",
-                "msg_dt": "2018-11-04T00:42:36-03:00",
-                "msg_id": 5,
-                "msg_fromyou": true
-            },
-            "role": "Volunteer",
-            "interlocutor": "Петров Александр",
-            "create_dt": "2018-11-04T00:42:36-03:00",
-            "status": "OK"
+        const result = {};
+        result['application/json'] = {
+            "last_msg": null,
+            "role": null,
+            "interlocutor": null,
+            "create_dt": null,
+            "status": "SERVER ERROR"
         };
-        if (Object.keys(examples).length > 0) {
-            resolve(examples[Object.keys(examples)[0]]);
-        } else {
-            resolve();
-        }
+
+        let data = {
+            role: null,
+            interlocutor: null,
+            lat_msg: null,
+            create_dt: null
+        };
+
+        MethodDB.selectDialog(knex, body.dlg_id)
+            .then((res) => {
+                if (res.length === 0) throw new Error("Not Found Dialog");
+                data.create_dt = res[0].dlg_begindt;
+                if (res[0].cli_id === body.msg_sendercliid && body.msg_sendervolid === undefined) {
+                    // Мы cli, определяем есть ли vol1 с нами в диалоге
+                    if (res[0].vol1_id === null) {
+                        // Собеседника нет
+                        return null;
+                    }
+                    else {
+                        // Роль Волонтер ID res[0].vol1_id
+                        data.role = "Volunteer";
+                        return MethodDB.selectVolInfo(knex, res[0].vol1_id);
+                    }
+                }
+                if (res[0].vol1_id === body.msg_sendervolid && body.msg_sendercliid === undefined) {
+                    // Мы vol1, определяем кто с нами в диалоге cli или vol2
+                    if (res[0].cli_id !== null) {
+                        // Роль Клиент ID res[0].cli_id
+                        data.role = "Client";
+                        return MethodDB.selectClientInfo(knex, res[0].cli_id);
+                    }
+                    if (res[0].vol2_id !== null) {
+                        // Роль Волонтер ID res[0].vol2_id
+                        data.role = "Volunteer";
+                        return MethodDB.selectVolInfo(knex, res[0].vol2_id);
+                    }
+                }
+                if (res[0].vol2_id === body.msg_sendervolid && body.msg_sendercliid === undefined) {
+                    // Роль Волонтер ID res[0].vol1_id
+                    data.role = "Volunteer";
+                    return MethodDB.selectVolInfo(knex, res[0].vol1_id);
+                }
+                if (res[0].vol1_id === null && res[0].vol2_id === null &&
+                    body.msg_sendercliid === undefined && body.msg_sendervolid !== undefined) {
+                    // Роль Клиент ID res[0].cli_id
+                    data.role = "Client";
+                    return MethodDB.selectClientInfo(knex, res[0].cli_id);
+                }
+                throw new Error("No Access");
+            })
+            .then((res) => {
+                if (res !== null) {
+                    if (res.length === 0) throw new Error("Not Found User");
+                    if (data.role === "Volunteer") {
+                        if (res[0].vol_admin) {
+                            data.role = "Admin";
+                        }
+                        data.interlocutor = res[0].vol_fullname;
+                    }
+                    if (data.role === "Client") {
+                        data.interlocutor = res[0].cli_fullname;
+                    }
+                }
+                return MethodDB.selectDialogLastMsg(knex, body.dlg_id);
+            })
+            .then((res) => {
+                if (res.length !== 0) {
+                    const el = res[0];
+                    if (el.msg_sendercliid != null && body.msg_sendercliid !== undefined &&
+                        el.msg_sendercliid === body.msg_sendercliid) {
+                        Object.defineProperty(el, 'msg_fromyou',
+                            Object.getOwnPropertyDescriptor(el, 'msg_sendercliid'));
+                        delete el['msg_sendercliid'];
+                        delete el['msg_sendervolid'];
+                        el.msg_fromyou = true;
+                    } else {
+                        if (el.msg_sendervolid != null && body.msg_sendervolid !== undefined &&
+                            el.msg_sendervolid === body.msg_sendervolid) {
+                            Object.defineProperty(el, 'msg_fromyou',
+                                Object.getOwnPropertyDescriptor(el, 'msg_sendervolid'));
+                            delete el['msg_sendercliid'];
+                            delete el['msg_sendervolid'];
+                            el.msg_fromyou = true;
+                        }
+                        else {
+                            delete el['msg_sendercliid'];
+                            delete el['msg_sendervolid'];
+                            el.msg_fromyou = false;
+                        }
+                    }
+                    data.lat_msg = el;
+                }
+                console.log(TAG + " -> result: good");
+                result['application/json'] = {
+                    "last_msg": data.lat_msg,
+                    "role": data.role,
+                    "interlocutor": data.interlocutor,
+                    "create_dt": data.create_dt,
+                    "status": "OK"
+                };
+            })
+            .catch((err) => {
+                console.error(TAG + " -> result: " + err);
+                result['application/json'] = {
+                    "last_msg": null,
+                    "role": null,
+                    "interlocutor": null,
+                    "create_dt": null,
+                    "status": "ERROR"
+                };
+                if (err.message === "Not Found Dialog") {
+                    result['application/json'] = {
+                        "last_msg": null,
+                        "role": null,
+                        "interlocutor": null,
+                        "create_dt": null,
+                        "status": "NOT FOUND DLG"
+                    };
+                }
+                if (err.message === "No Access") {
+                    result['application/json'] = {
+                        "last_msg": null,
+                        "role": null,
+                        "interlocutor": null,
+                        "create_dt": null,
+                        "status": "NO ACCESS"
+                    };
+                }
+                if (err.message === "Not Found User") {
+                    result['application/json'] = {
+                        "last_msg": null,
+                        "role": null,
+                        "interlocutor": null,
+                        "create_dt": null,
+                        "status": "NOT FOUND USR"
+                    };
+                }
+            })
+            .finally(() => {
+                resolve(result[Object.keys(result)[0]]);
+            });
     });
 };
 
@@ -61,10 +194,20 @@ exports.getDialogMsgs = function (body) {
             "status": "SERVER ERROR"
         };
         try {
-            MethodDB.selectDialogMsgs(knex, body.dlg_id)
+            MethodDB.selectDialog(knex, body.dlg_id)
                 .then((res) => {
-                    console.log(TAG + "  -> result: good");
+                    if (res.length === 0) throw new Error("Not Found Dialog");
+                    if ((res[0].cli_id === body.msg_sendercliid && body.msg_sendervolid === undefined) ||
+                        ((res[0].vol1_id === body.msg_sendervolid || res[0].vol2_id === body.msg_sendervolid ||
+                            (res[0].vol1_id === null && res[0].vol2_id === null && body.msg_sendervolid !== undefined))
+                            && body.msg_sendercliid === undefined))
+                        return MethodDB.selectDialogMsgs(knex, body.dlg_id);
+                    else return null;
+                })
+                .then((res) => {
+                    if (res === null) throw new Error("No Access");
                     if (res.length === 0) {
+                        console.log(TAG + "  -> result: good");
                         result['application/json'] = {
                             "array_msg": [],
                             "status": "OK"
@@ -72,8 +215,8 @@ exports.getDialogMsgs = function (body) {
                     }
                     else {
                         res.forEach((el) => {
-                            if(el.msg_sendercliid!=null && body.msg_sendercliid!==undefined &&
-                                el.msg_sendercliid === body.msg_sendercliid){
+                            if (el.msg_sendercliid != null && body.msg_sendercliid !== undefined &&
+                                el.msg_sendercliid === body.msg_sendercliid) {
                                 Object.defineProperty(el, 'msg_fromyou',
                                     Object.getOwnPropertyDescriptor(el, 'msg_sendercliid'));
                                 delete el['msg_sendercliid'];
@@ -81,8 +224,8 @@ exports.getDialogMsgs = function (body) {
                                 el.msg_fromyou = true;
                                 return;
                             }
-                            if(el.msg_sendervolid!=null && body.msg_sendervolid!==undefined &&
-                                el.msg_sendervolid === body.msg_sendervolid){
+                            if (el.msg_sendervolid != null && body.msg_sendervolid !== undefined &&
+                                el.msg_sendervolid === body.msg_sendervolid) {
                                 Object.defineProperty(el, 'msg_fromyou',
                                     Object.getOwnPropertyDescriptor(el, 'msg_sendervolid'));
                                 delete el['msg_sendercliid'];
@@ -94,6 +237,7 @@ exports.getDialogMsgs = function (body) {
                             delete el['msg_sendervolid'];
                             el.msg_fromyou = false;
                         });
+                        console.log(TAG + " -> result: good");
                         result['application/json'] = {
                             "array_msg": res,
                             "status": "OK"
@@ -102,6 +246,18 @@ exports.getDialogMsgs = function (body) {
                 })
                 .catch((err) => {
                     console.error(TAG + "  -> result: " + err);
+                    if (err.message === "Not Found Dialog") {
+                        result['application/json'] = {
+                            "array_msg": [],
+                            "status": "NOT FOUND"
+                        };
+                    }
+                    if (err.message === "No Access") {
+                        result['application/json'] = {
+                            "array_msg": [],
+                            "status": "NO ACCESS"
+                        };
+                    }
                 })
                 .finally(() => {
                     resolve(result[Object.keys(result)[0]]);
@@ -122,27 +278,86 @@ exports.getDialogMsgs = function (body) {
  * returns inline_response_200_1
  **/
 exports.getLastMsg = function (body) {
+    const TAG = "getLastMsg";
+
     return new Promise(function (resolve, reject) {
-        var examples = {};
-        examples['application/json'] = {
-            "array_msg": [{
-                "msg_text": "Здравстуйте! Подскажите, пожалуйста, лучший наркологический диспансер в Липецке",
-                "msg_dt": "2018-11-04T00:42:36-03:00",
-                "msg_id": 5,
-                "msg_fromyou": true
-            }, {
-                "msg_text": "Здравстуйте! Подскажите, пожалуйста, лучший наркологический диспансер в Липецке",
-                "msg_dt": "2018-11-04T00:42:36-03:00",
-                "msg_id": 5,
-                "msg_fromyou": true
-            }],
-            "status": "OK"
+        const result = {};
+        result['application/json'] = {
+            "last_msg": null,
+            "status": "SERVER ERROR"
         };
-        if (Object.keys(examples).length > 0) {
-            resolve(examples[Object.keys(examples)[0]]);
-        } else {
-            resolve();
-        }
+
+        MethodDB.selectDialog(knex, body.dlg_id)
+            .then((res) => {
+                if (res.length === 0) throw new Error("Not Found Dialog");
+                if ((res[0].cli_id === body.msg_sendercliid && body.msg_sendervolid === undefined) ||
+                    ((res[0].vol1_id === body.msg_sendervolid || res[0].vol2_id === body.msg_sendervolid ||
+                        (res[0].vol1_id === null && res[0].vol2_id === null && body.msg_sendervolid !== undefined))
+                        && body.msg_sendercliid === undefined))
+                    return MethodDB.selectDialogLastMsg(knex, body.dlg_id);
+                else return null;
+            })
+            .then((res) => {
+                if (res === null) throw new Error("No Access");
+                console.log(TAG + " -> result: good");
+                if (res.length === 0) {
+                    result['application/json'] = {
+                        "last_msg": null,
+                        "status": "OK"
+                    };
+                }
+                else {
+                    const el = res[0];
+                    if (el.msg_sendercliid != null && body.msg_sendercliid !== undefined &&
+                        el.msg_sendercliid === body.msg_sendercliid) {
+                        Object.defineProperty(el, 'msg_fromyou',
+                            Object.getOwnPropertyDescriptor(el, 'msg_sendercliid'));
+                        delete el['msg_sendercliid'];
+                        delete el['msg_sendervolid'];
+                        el.msg_fromyou = true;
+                    } else {
+                        if (el.msg_sendervolid != null && body.msg_sendervolid !== undefined &&
+                            el.msg_sendervolid === body.msg_sendervolid) {
+                            Object.defineProperty(el, 'msg_fromyou',
+                                Object.getOwnPropertyDescriptor(el, 'msg_sendervolid'));
+                            delete el['msg_sendercliid'];
+                            delete el['msg_sendervolid'];
+                            el.msg_fromyou = true;
+                        }
+                        else {
+                            delete el['msg_sendercliid'];
+                            delete el['msg_sendervolid'];
+                            el.msg_fromyou = false;
+                        }
+                    }
+                    result['application/json'] = {
+                        "last_msg": el,
+                        "status": "OK"
+                    };
+                }
+            })
+            .catch((err) => {
+                console.error(TAG + " -> result: " + err);
+                result['application/json'] = {
+                    "last_msg": null,
+                    "status": "ERROR"
+                };
+                if (err.message === "Not Found Dialog") {
+                    result['application/json'] = {
+                        "last_msg": null,
+                        "status": "NOT FOUND"
+                    };
+                }
+                if (err.message === "No Access") {
+                    result['application/json'] = {
+                        "last_msg": null,
+                        "status": "NO ACCESS"
+                    };
+                }
+            })
+            .finally(() => {
+                resolve(result[Object.keys(result)[0]]);
+            });
     });
 };
 
@@ -185,7 +400,7 @@ exports.sendMsg = function (body) {
                             if (res[0].vol1_id === null && body.msg_sendervolid !== undefined
                                 && body.msg_sendercliid === undefined)
                                 return {set_vol1: true};
-                            else throw new Error('Dialog Not Found');
+                            else throw new Error('No Access');
                         }
                     })
                     .then((res) => {
@@ -197,7 +412,7 @@ exports.sendMsg = function (body) {
                         return MethodDB.insertMessage(knex, this_msg);
                     })
                     .then((res) => {
-                        return MethodDB.insertDlgMsg(knex, { msg_id: res[0], dlg_id: body.dlg_id })
+                        return MethodDB.insertDlgMsg(knex, {msg_id: res[0], dlg_id: body.dlg_id})
                     })
                     .then((res) => {
                         console.log(TAG + " -> result: good");
@@ -212,6 +427,18 @@ exports.sendMsg = function (body) {
                             "msg_id": null,
                             "status": "ERROR"
                         };
+                        if (err.message === "Not Found Dialog") {
+                            result['application/json'] = {
+                                "msg_id": null,
+                                "status": "NOT FOUND"
+                            };
+                        }
+                        if (err.message === "No Access") {
+                            result['application/json'] = {
+                                "msg_id": null,
+                                "status": "NO ACCESS"
+                            };
+                        }
                     })
                     .finally(() => {
                         resolve(result[Object.keys(result)[0]]);

@@ -157,10 +157,8 @@ paths:
               status:
                 type: string
                 example: OK
-              array_msg:
-                type: array
-                items:
-                  $ref: '#/definitions/message'
+              last_msg:
+                $ref: '#/definitions/message'
             xml:
               name: response
         '400':
@@ -922,6 +920,22 @@ paths:
       produces:
         - application/xml
         - application/json
+      parameters:
+        - in: body
+          name: body
+          description: ID волонтера
+          required: true
+          schema:
+            type: object
+            required:
+              - vol_id
+            properties:
+              vol_id:
+                type: integer
+                format: int32
+                example: 2
+            xml:
+              name: parameters
       responses:
         '200':
           description: OK
@@ -1111,9 +1125,14 @@ definitions:
       - client
       - rqt_url
       - rqt_imgsource
+      - rqt_dt
     properties:
       client:
         $ref: '#/definitions/client'
+      dlg_id:
+        type: integer
+        format: int32
+        example: 4
       rqt_url:
         type: string
         example: 'https://www.postgresql.org/docs/9.1/static/datatype-numeric.html'
@@ -1123,6 +1142,10 @@ definitions:
       rqt_imgsource:
         type: string
         example: 'http://voice-gen-220-900.appspot.com/screen1.jpg'
+      rqt_dt:
+        type: string
+        format: date-time
+        example: '2018-11-07T10:38:38.172Z'
     xml:
       name: requestWithClient
   message:
