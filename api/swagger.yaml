@@ -1,7 +1,7 @@
 swagger: '2.0'
 info:
   description: API проекта "Голос поколения" для РКН и УМВД Липецкой области.
-  version: 1.3.0
+  version: 1.4.0
   title: API Voice Generation
   contact:
     email: antony.nor@yandex.ru
@@ -49,7 +49,7 @@ paths:
         400:
           description: Invalid data
   /sendMsg:
-    options:
+    post:
       tags:
         - global
       summary: Отправить сообщение
@@ -111,7 +111,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Global
   /getLastMsg:
-    options:
+    post:
       tags:
         - global
       summary: Получить последнее сообщение в диалоге
@@ -165,7 +165,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Global
   /getDialogMsgs:
-    options:
+    post:
       tags:
         - global
       summary: Получить все сообщения диалога
@@ -221,7 +221,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Global
   /getDialogInfo:
-    options:
+    post:
       tags:
         - global
       summary: Получить информацию о диалоге
@@ -284,12 +284,12 @@ paths:
         '400':
           description: Invalid data
     x-swagger-router-controller: Global
-  
+
   #
   # Admin/Volunteer
   #
   /login:
-    options:
+    post:
       tags:
         - admin/volunteer
       summary: Авторизация в системе для администраторов и волонтеров
@@ -346,7 +346,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Adminvolunteer
   /getListDialogs:
-    options:
+    post:
       tags:
         - admin/volunteer
       summary: Получить список диалогов с информацией о них (с теми, у которые никто не обслуживает, но при этом они не привязаны к заявке)
@@ -421,7 +421,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Adminvolunteer
   /getAllQuotes:
-    options:
+    post:
       tags:
         - admin/volunteer
       summary: Получить список цитат с подробной информацией
@@ -453,7 +453,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Adminvolunteer
   /setQuote:
-    options:
+    post:
       tags:
         - admin/volunteer
       summary: Создать цитату
@@ -510,7 +510,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Adminvolunteer
   /delQuote:
-    options:
+    post:
       tags:
         - admin/volunteer
       summary: Удалить цитату
@@ -544,7 +544,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Adminvolunteer
   /updQuote:
-    options:
+    post:
       tags:
         - admin/volunteer
       summary: Обновить цитату
@@ -600,7 +600,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Adminvolunteer
   /setDialog:
-    options:
+    post:
       tags:
         - admin/volunteer
       summary: 'Создание диалога'
@@ -653,7 +653,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Adminvolunteer
   /uploadImg:
-    options:
+    post:
       tags:
         - admin/volunteer
       summary: Получить загрузить картинку
@@ -695,7 +695,7 @@ paths:
   # Client
   #
   /getScreen:
-    options:
+    post:
       tags:
         - client
       summary: Получить скриншот от сервера
@@ -733,7 +733,7 @@ paths:
           description: Invalid URL
     x-swagger-router-controller: Client
   /getClient:
-    options:
+    post:
       tags:
         - client
       summary: Создать клиента и получить его ID
@@ -773,7 +773,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Client
   /setRequest:
-    options:
+    post:
       tags:
         - client
       summary: Создать заявку по ID клиента
@@ -813,7 +813,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Client
   /client/setDialog:
-    options:
+    post:
       tags:
         - client
       summary: 'Создание диалога (НЕ привязанного к заявке) клиентом'
@@ -852,7 +852,7 @@ paths:
           description: Invalid data
     x-swagger-router-controller: Client
   /setDialogForRqt:
-    options:
+    post:
       tags:
         - client
       summary: 'Создание диалога, привязанного к заявке'
@@ -904,12 +904,12 @@ paths:
         '400':
           description: Invalid data
     x-swagger-router-controller: Client
-  
+
   #
   # Volunteer
   #
   /getRequest:
-    options:
+    post:
       tags:
         - volunteer
       summary: Получить необработанную заявку
@@ -949,15 +949,66 @@ paths:
                 example: OK
               request_data:
                 $ref: '#/definitions/requestWithClient'
-            xml: 
+            xml:
               name: response
+        '400':
+          description: Invalid data
+    x-swagger-router-controller: Volunteer
+  /closeRequest:
+    post:
+      tags:
+        - volunteer
+      summary: Закрывает заявку, привязанную к волонтеру
+      operationId: closeRequest
+      consumes:
+        - application/json
+        - application/xml
+      produces:
+        - application/xml
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: ID волонтера
+          required: true
+          schema:
+            type: object
+            required:
+              - rqt_id
+              - vol_id
+            properties:
+              rqt_id:
+                type: integer
+                format: int32
+                example: 3
+              vol_id:
+                type: integer
+                format: int32
+                example: 2
+            xml:
+              name: parameters
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+            required:
+              - status
+            properties:
+              status:
+                type: string
+                example: OK
+            xml:
+              name: response
+        '400':
+          description: Invalid data
     x-swagger-router-controller: Volunteer
   
   #
   # Admin
   #
   /registration:
-    options:
+    post:
       tags:
         - admin
       summary: 'Регистрация волонтера или нового администратора'
@@ -1129,6 +1180,10 @@ definitions:
     properties:
       client:
         $ref: '#/definitions/client'
+      rqt_id:
+        type: integer
+        format: int32
+        example: 3
       dlg_id:
         type: integer
         format: int32

@@ -1,5 +1,8 @@
 'use strict';
-
+const fs = require('fs');
+const uniqid = require('uniqid');
+const MethodDB = require('../db_method/MethodAdminVolunteer');
+const knex = require('../index').knex;
 
 /**
  * Удалить цитату
@@ -9,7 +12,7 @@
  **/
 exports.delQuote = function (qot_id) {
     return new Promise(function (resolve, reject) {
-        var examples = {};
+        const examples = {};
         examples['application/json'] = {
             "status": "OK"
         };
@@ -19,7 +22,7 @@ exports.delQuote = function (qot_id) {
             resolve();
         }
     });
-}
+};
 
 
 /**
@@ -29,7 +32,7 @@ exports.delQuote = function (qot_id) {
  **/
 exports.getAllQuotes = function () {
     return new Promise(function (resolve, reject) {
-        var examples = {};
+        const examples = {};
         examples['application/json'] = {
             "array_qot": [{
                 "qot_id": 6,
@@ -56,7 +59,7 @@ exports.getAllQuotes = function () {
             resolve();
         }
     });
-}
+};
 
 
 /**
@@ -67,7 +70,7 @@ exports.getAllQuotes = function () {
  **/
 exports.getListDialogs = function (sender_id) {
     return new Promise(function (resolve, reject) {
-        var examples = {};
+        const examples = {};
         examples['application/json'] = {
             "list_dialogs": [{
                 "last_msg": {
@@ -100,7 +103,7 @@ exports.getListDialogs = function (sender_id) {
             resolve();
         }
     });
-}
+};
 
 
 /**
@@ -110,21 +113,55 @@ exports.getListDialogs = function (sender_id) {
  * returns inline_response_200_3
  **/
 exports.login = function (body) {
+    const TAG = "login";
+
+    const this_data = {
+        vol_email: body.email,
+        vol_hashpass: body.hashpass
+    };
+
     return new Promise(function (resolve, reject) {
-        var examples = {};
-        examples['application/json'] = {
-            "vol_name": "Сергиенко Дмитрий Владимирович",
-            "vol_admin": false,
-            "vol_id": 2,
-            "status": "OK"
+        const result = {};
+        result['application/json'] = {
+            "vol_fullname": null,
+            "vol_admin": null,
+            "vol_id": null,
+            "status": "SERVER ERROR"
         };
-        if (Object.keys(examples).length > 0) {
-            resolve(examples[Object.keys(examples)[0]]);
-        } else {
-            resolve();
-        }
+
+        MethodDB.accessCheck(knex, this_data)
+            .then((res) => {
+                if(res.length === 0) throw new Error("Not Found");
+                console.log(TAG + " -> result: good");
+                result['application/json'] = {
+                    "vol_fullname": res[0].vol_fullname,
+                    "vol_admin": res[0].vol_admin,
+                    "vol_id": res[0].vol_id,
+                    "status": "OK"
+                };
+            })
+            .catch((err) => {
+                console.error(TAG + " -> resilt: " + err);
+                result['application/json'] = {
+                    "vol_fullname": null,
+                    "vol_admin": null,
+                    "vol_id": null,
+                    "status": "ERROR"
+                };
+                if(err.message === "Not Found") {
+                    result['application/json'] = {
+                        "vol_fullname": null,
+                        "vol_admin": null,
+                        "vol_id": null,
+                        "status": "NOT FOUND"
+                    };
+                }
+            })
+            .finally(() => {
+                resolve(result[Object.keys(result)[0]]);
+            });
     });
-}
+};
 
 
 /**
@@ -135,7 +172,7 @@ exports.login = function (body) {
  **/
 exports.setDialog = function (body) {
     return new Promise(function (resolve, reject) {
-        var examples = {};
+        const examples = {};
         examples['application/json'] = {
             "dlg_id": 4,
             "status": "OK"
@@ -146,7 +183,7 @@ exports.setDialog = function (body) {
             resolve();
         }
     });
-}
+};
 
 
 /**
@@ -157,7 +194,7 @@ exports.setDialog = function (body) {
  **/
 exports.setQuote = function (body) {
     return new Promise(function (resolve, reject) {
-        var examples = {};
+        const examples = {};
         examples['application/json'] = {
             "qot_id": 6,
             "status": "OK"
@@ -168,7 +205,7 @@ exports.setQuote = function (body) {
             resolve();
         }
     });
-}
+};
 
 
 /**
@@ -179,7 +216,7 @@ exports.setQuote = function (body) {
  **/
 exports.updQuote = function (body) {
     return new Promise(function (resolve, reject) {
-        var examples = {};
+        const examples = {};
         examples['application/json'] = {
             "status": "OK"
         };
@@ -189,7 +226,7 @@ exports.updQuote = function (body) {
             resolve();
         }
     });
-}
+};
 
 
 /**
@@ -198,18 +235,51 @@ exports.updQuote = function (body) {
  * upfile File Файл для загрузки (картинка)
  * returns inline_response_200_9
  **/
-exports.uploadImg = function (upfile) {
+exports.uploadImg = function (upfile, host) {
+    const TAG = "uploadImg";
+
     return new Promise(function (resolve, reject) {
-        var examples = {};
-        examples['application/json'] = {
-            "imgUrl": "https://pp.userapi.com/c851528/v851528769/352b7/bGRSJ7rmJR0.jpg",
-            "status": "OK"
+        const result = {};
+        result['application/json'] = {
+            "imgUrl": null,
+            "status": "SERVER ERROR"
         };
-        if (Object.keys(examples).length > 0) {
-            resolve(examples[Object.keys(examples)[0]]);
-        } else {
-            resolve();
+
+        try {
+            let mimetype = null;
+            switch (upfile.mimetype) {
+                case "image/jpeg":
+                    mimetype = ".jpeg";
+                    break;
+                case "image/gif":
+                    mimetype = ".gif";
+                    break;
+                case "image/png":
+                    mimetype = ".png";
+                    break;
+            }
+
+            if (mimetype === null) throw new Error("Invalid MimeType");
+
+            const imgUid = uniqid('upload_');
+            fs.writeFileSync('./public/' + imgUid + mimetype, upfile.buffer);
+
+            console.log(TAG + " -> result: good");
+            result['application/json'] = {
+                "imgUrl": host + "/public/" + imgUid + mimetype,
+                "status": "OK"
+            };
+
+            resolve(result[Object.keys(result)[0]]);
+        }
+        catch (err) {
+            console.error(TAG + " -> result: " + err);
+            result['application/json'] = {
+                "imgUrl": null,
+                "status": "ERROR"
+            };
+            reject(result[Object.keys(result)[0]]);
         }
     });
-}
+};
 

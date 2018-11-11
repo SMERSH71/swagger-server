@@ -3,6 +3,41 @@ const MethodDB = require('../db_method/MethodVolunteer');
 const knex = require('../index').knex;
 
 /**
+ * Закрывает заявку, привязанную к волонтеру
+ *
+ * body Body_11 ID волонтера
+ * returns inline_response_200_8
+ **/
+exports.closeRequest = function(body) {
+    const TAG = "colseRequest";
+
+    return new Promise(function(resolve, reject) {
+        const result = {};
+        result['application/json'] = {
+            "status" : "SERVER ERROR"
+        };
+
+        MethodDB.updStatus(knex, body.vol_id, body.rqt_id)
+            .then((res) => {
+                if(res === 0) throw new Error("Invalid Update");
+                console.log(TAG + " -> result: good");
+                result['application/json'] = {
+                    "status" : "OK"
+                };
+            })
+            .catch((err) => {
+                console.error(TAG + " -> result: " + err);
+                result['application/json'] = {
+                    "status" : "ERROR"
+                };
+            })
+            .finally(() => {
+                resolve(result[Object.keys(result)[0]]);
+            });
+    });
+};
+
+/**
  * Получить необработанную заявку
  *
  * returns inline_response_200_13
@@ -44,11 +79,12 @@ exports.getRequest = function (body) {
                 return MethodDB.insertVolInRqt(knex,body.vol_id,data.rqt_id);
             })
             .then((res) => {
-                if (res.length === 0) throw new Error('Invalid Update');
+                if (res === 0) throw new Error('Invalid Update');
                 console.log(TAG + " -> result: good");
                 result['application/json'] = {
                     "request_data": {
                         "client": data.client,
+                        "rqt_id": data.rqt_id,
                         "dlg_id": data.dlg_id,
                         "rqt_url": data.rqt_url,
                         "rqt_imgsource": data.rqt_imgsource,

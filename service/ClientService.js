@@ -188,7 +188,7 @@ exports.setDialogForRqt = function (body) {
         };
 
         MethodDB.insertDialog(knex, this_dialog)
-            .then((res) => MethodDB.updRequestDlg(knex, res[0], body.rqt_id))
+            .then((res) => MethodDB.updRequestDlg(knex, res[0], body.rqt_id, body.cli_id))
             .then((res) => {
                 if (res.length === 0) throw new Error("Invalid update parameter dlg_id for request");
                 console.log(TAG + " -> result: good");

@@ -4,6 +4,8 @@ const fs = require('fs'),
     path = require('path'),
     http = require('http');
 
+const cors = require('cors');
+
 const process = require('process');
 const appConnect = require('connect')();
 const swaggerTools = require('swagger-tools');
@@ -46,6 +48,25 @@ function connect() {
         connection: config
     });
 }
+
+appConnect.use(cors());
+appConnect.use(function (req, res, next) {
+
+    if (req.method === 'OPTIONS') {
+        console.log('!OPTIONS');
+        var headers = {};
+        headers["Access-Control-Allow-Origin"] = "*";
+        headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
+        headers["Access-Control-Allow-Credentials"] = false;
+        headers["Access-Control-Max-Age"] = '86400';
+        headers["Access-Control-Allow-Headers"] = "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept";
+        res.writeHead(200, headers);
+        res.end();
+    }
+    else{
+        next();
+    }
+});
 
 appConnect.use(function (req, res, next) {
 
