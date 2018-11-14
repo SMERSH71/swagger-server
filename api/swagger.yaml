@@ -309,12 +309,12 @@ paths:
             type: object
             required:
               - email
-              - hashpass
+              - pass
             properties:
               email:
                 type: string
                 example: sergienko@gmail.com
-              hashpass:
+              pass:
                 type: string
                 example: '93ab60127ca9c4fe7e0922ddddf91876'
             xml:
@@ -1097,7 +1097,7 @@ definitions:
     required:
       - vol_fullname
       - vol_email
-      - vol_hashpass
+      - vol_pass
       - vol_phone
       - vol_address
       - vol_passeries
@@ -1113,7 +1113,7 @@ definitions:
       vol_email:
         type: string
         example: 'sergienko@gmail.com'
-      vol_hashpass:
+      vol_pass:
         type: string
         example: '93ab60127ca9c4fe7e0922ddddf91876'
       vol_phone:

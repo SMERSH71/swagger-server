@@ -39,7 +39,8 @@ module.exports.login = function login(req, res, next) {
     const body = req.swagger.params['body'].value;
     Adminvolunteer.login(body)
         .then(function (response) {
-            utils.writeJson(res, response);
+            res.setHeader("Set-Cookie", "token=" + response.token);
+            utils.writeJson(res, response.data);
         })
         .catch(function (response) {
             utils.writeJson(res, response);
