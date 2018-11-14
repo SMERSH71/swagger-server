@@ -131,7 +131,7 @@ exports.login = function (body) {
 
         MethodDB.accessCheck(knex, this_data)
             .then((res) => {
-                if(res.length === 0) throw new Error("Not Found");
+                if (res.length === 0) throw new Error("Not Found");
                 console.log(TAG + " -> result: good");
                 result['application/json'] = {
                     "vol_fullname": res[0].vol_fullname,
@@ -148,7 +148,7 @@ exports.login = function (body) {
                     "vol_id": null,
                     "status": "ERROR"
                 };
-                if(err.message === "Not Found") {
+                if (err.message === "Not Found") {
                     result['application/json'] = {
                         "vol_fullname": null,
                         "vol_admin": null,
@@ -193,17 +193,36 @@ exports.setDialog = function (body) {
  * returns inline_response_200_6
  **/
 exports.setQuote = function (body) {
+    const TAG = "setQuote";
+
     return new Promise(function (resolve, reject) {
-        const examples = {};
-        examples['application/json'] = {
-            "qot_id": 6,
-            "status": "OK"
+        const result = {};
+        result['application/json'] = {
+            "qot_id": null,
+            "status": "SERVER ERROR"
         };
-        if (Object.keys(examples).length > 0) {
-            resolve(examples[Object.keys(examples)[0]]);
-        } else {
-            resolve();
-        }
+
+        body.qot_countlikes = 0;
+
+        MethodDB.insertQuote(knex, body)
+            .then((res) => {
+                if (res.length === 0) throw new Error('Invalid Insert');
+                console.log(TAG + " -> result: good");
+                result['application/json'] = {
+                    "qot_id": res[0],
+                    "status": "OK"
+                };
+            })
+            .catch((err) => {
+                console.error(TAG + " -> result: " + err);
+                result['application/json'] = {
+                    "qot_id": null,
+                    "status": "ERROR"
+                };
+            })
+            .finally(() => {
+                resolve(result[Object.keys(result)[0]]);
+            });
     });
 };
 
@@ -259,18 +278,34 @@ exports.uploadImg = function (upfile, host) {
                     break;
             }
 
-            if (mimetype === null) throw new Error("Invalid MimeType");
+            if (mimetype === null)
+            {
+                console.error(TAG + " -> result: Invalid MimeType");
+                result['application/json'] = {
+                    "imgUrl": null,
+                    "status": "ERROR"
+                };
+                reject(result[Object.keys(result)[0]]);
+            }
 
             const imgUid = uniqid('upload_');
-            fs.writeFileSync('./public/' + imgUid + mimetype, upfile.buffer);
+            fs.writeFile('./public/' + imgUid + mimetype, upfile.buffer, (err) => {
+                if(err) {
+                    console.error(TAG + " -> result: " + err);
+                    result['application/json'] = {
+                        "imgUrl": null,
+                        "status": "ERROR"
+                    };
+                    reject(result[Object.keys(result)[0]]);
+                }
+                console.log(TAG + " -> result: good");
+                result['application/json'] = {
+                    "imgUrl": host + "/public/" + imgUid + mimetype,
+                    "status": "OK"
+                };
 
-            console.log(TAG + " -> result: good");
-            result['application/json'] = {
-                "imgUrl": host + "/public/" + imgUid + mimetype,
-                "status": "OK"
-            };
-
-            resolve(result[Object.keys(result)[0]]);
+                resolve(result[Object.keys(result)[0]]);
+            });
         }
         catch (err) {
             console.error(TAG + " -> result: " + err);

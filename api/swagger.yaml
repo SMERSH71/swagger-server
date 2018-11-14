@@ -483,7 +483,7 @@ paths:
                 example: Уильям Шекспир
               qot_textvisibility:
                 type: boolean
-                example: true;
+                example: true
               qot_imgsource:
                 type: string
                 example: 'http://voice-gen-220-900.appspot.com/quote1.jpg'

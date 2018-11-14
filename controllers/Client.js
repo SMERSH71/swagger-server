@@ -36,7 +36,7 @@ module.exports.getClient = function getClient(req, res, next) {
 };
 
 module.exports.getScreen = function getScreen(req, res, next) {
-    var uRL = req.swagger.params['URL'].value;
+    const uRL = req.swagger.params['URL'].value;
     Client.getScreen(uRL, req.headers.host)
         .then(function (response) {
             utils.writeJson(res, response);
@@ -47,7 +47,7 @@ module.exports.getScreen = function getScreen(req, res, next) {
 };
 
 module.exports.setDialogForRqt = function setDialogForRqt(req, res, next) {
-    var body = req.swagger.params['body'].value;
+    const body = req.swagger.params['body'].value;
     Client.setDialogForRqt(body)
         .then(function (response) {
             utils.writeJson(res, response);
@@ -58,7 +58,7 @@ module.exports.setDialogForRqt = function setDialogForRqt(req, res, next) {
 };
 
 module.exports.setRequest = function setRequest(req, res, next) {
-    var body = req.swagger.params['body'].value;
+    const body = req.swagger.params['body'].value;
     Client.setRequest(body)
         .then(function (response) {
             utils.writeJson(res, response);
