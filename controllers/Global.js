@@ -4,15 +4,46 @@ const utils = require('../utils/writer.js');
 const Global = require('../service/GlobalService');
 
 module.exports.publicGetImg = function publicGetImg(req, res, next) {
+    const TAG = "/public/{imgName}";
+
+    const result = {};
+    result['application/json'] = {
+        "status": "ERROR"
+    };
     const imgName = req.swagger.params['imgName'].value;
     Global.publicGetImg(imgName)
-        .then(function (response) {
-            const img = require('fs').readFileSync(response);
-            res.writeHead(200, {'Content-Type': 'image/png'});
-            res.end(img, 'binary');
+        .then((response) => {
+            const mimeType = response.match(/.(jpeg|jpg|png|gif)$/)[1];
+            const stat = require('fs').statSync(response);
+            res.writeHead(200, {
+                'Content-Type' : 'image/'+mimeType,
+                'Content-Length': stat.size
+            });
+            require('fs').createReadStream(response).pipe(res);
+            console.log(TAG + ' -> result: good');
+            /*
+            require('fs').readFile(response, 'binary', (err, img) => {
+                if (err) {
+                    console.error(TAG + ' -> result 1: ' + err);
+                    utils.writeJson(res, result[Object.keys(result)[0]]);
+                } else {
+                    try {
+                        const mimeType = response.match(/.(jpeg|jpg|png|gif)$/)[1];
+                        console.log(TAG + ' -> result: good');
+                        res.writeHead(200, {'Content-Type': 'image/' + mimeType});
+                        res.end(img, 'binary');
+                    }
+                    catch (err) {
+                        console.error(TAG + ' -> result 2: ' + err);
+                        utils.writeJson(res, result[Object.keys(result)[0]]);
+                    }
+                }
+            });
+            */
         })
-        .catch(function (response) {
-            utils.writeJson(res, response);
+        .catch((err) => {
+            console.error(TAG + ' -> result: ' + err);
+            utils.writeJson(res, result[Object.keys(result)[0]]);
         });
 };
 

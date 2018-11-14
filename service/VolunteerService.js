@@ -8,27 +8,27 @@ const knex = require('../index').knex;
  * body Body_11 ID волонтера
  * returns inline_response_200_8
  **/
-exports.closeRequest = function(body) {
+exports.closeRequest = function (body) {
     const TAG = "colseRequest";
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         const result = {};
         result['application/json'] = {
-            "status" : "SERVER ERROR"
+            "status": "SERVER ERROR"
         };
 
         MethodDB.updStatus(knex, body.vol_id, body.rqt_id)
             .then((res) => {
-                if(res === 0) throw new Error("Invalid Update");
+                if (res === 0) throw new Error("Invalid Update");
                 console.log(TAG + " -> result: good");
                 result['application/json'] = {
-                    "status" : "OK"
+                    "status": "OK"
                 };
             })
             .catch((err) => {
                 console.error(TAG + " -> result: " + err);
                 result['application/json'] = {
-                    "status" : "ERROR"
+                    "status": "ERROR"
                 };
             })
             .finally(() => {
@@ -55,6 +55,7 @@ exports.getRequest = function (body) {
         let data = {
             rqt_id: null,
             client: null,
+            vol_id: null,
             dlg_id: null,
             rqt_url: null,
             rqt_comment: null,
@@ -62,10 +63,15 @@ exports.getRequest = function (body) {
             rqt_dt: null
         };
 
-        MethodDB.selectRequest(knex)
+        MethodDB.selectOldRequest(knex, body.vol_id)
+            .then((res) => {
+                if(res.length !== 0) return res;
+                return MethodDB.selectRequest(knex);
+            })
             .then((res) => {
                 if (res.length === 0) throw new Error("Not Found Request");
                 data.rqt_id = res[0].rqt_id;
+                data.vol_id = res[0].vol_id;
                 data.dlg_id = res[0].dlg_id;
                 data.rqt_url = res[0].rqt_url;
                 data.rqt_comment = res[0].rqt_comment;
@@ -76,7 +82,8 @@ exports.getRequest = function (body) {
             .then((res) => {
                 if (res.length === 0) throw new Error('Not Found Client');
                 data.client = res[0];
-                return MethodDB.insertVolInRqt(knex,body.vol_id,data.rqt_id);
+                if(data.vol_id !== null) return 1;
+                return MethodDB.insertVolInRqt(knex, body.vol_id, data.rqt_id);
             })
             .then((res) => {
                 if (res === 0) throw new Error('Invalid Update');
@@ -100,13 +107,13 @@ exports.getRequest = function (body) {
                     "request_data": null,
                     "status": "ERROR"
                 };
-                if(err.message === "Not Found Client"){
+                if (err.message === "Not Found Client") {
                     result['application/json'] = {
                         "request_data": null,
                         "status": "NOT FOUND CLI"
                     };
                 }
-                if(err.message === "Invalid Update"){
+                if (err.message === "Invalid Update") {
                     result['application/json'] = {
                         "request_data": null,
                         "status": "INVALID UPD RQT"

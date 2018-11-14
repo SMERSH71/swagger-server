@@ -1,5 +1,16 @@
 'use strict';
 
+exports.selectOldRequest =function(knex, vol_id){
+    let all_rqt = null;
+    return knex.select().from(function () {
+        all_rqt = this.select().from('request').where('rqt_status', 1).as('all_rqt')
+    })
+        .where('rqt_dt', function () {
+            this.min('rqt_dt').from(all_rqt)
+        })
+        .where('vol_id',vol_id);
+};
+
 exports.selectRequest = function (knex) {
     let all_rqt = null;
     return knex.select().from(function () {

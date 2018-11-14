@@ -143,7 +143,7 @@ exports.getScreen = function (uRL, host) {
         "status": "SERVER ERROR"
     };
 
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
         webshot(uRL, "./public/" + imgName + "." + options.streamType, options, (err) => {
             if (err) {
                 console.error(TAG + " -> result: " + err);
@@ -152,7 +152,7 @@ exports.getScreen = function (uRL, host) {
                     "status": "ERROR"
                 };
 
-                resolve(result[Object.keys(result)[0]]);
+                reject(result[Object.keys(result)[0]]);
             }
             console.log(TAG + " -> result: good");
             result['application/json'] = {
