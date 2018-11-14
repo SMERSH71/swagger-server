@@ -145,14 +145,15 @@ exports.login = function (body) {
             .then((res) => {
                 if (res.length === 0) throw new Error("Not Found");
                 console.log(TAG + " -> result: good");
+                token = getRandomString(64);
+                MethodDB.setToken(knex, this_data, token);
                 result['application/json'] = {
                     "vol_fullname": res[0].vol_fullname,
                     "vol_admin": res[0].vol_admin,
                     "vol_id": res[0].vol_id,
+                    "token": token,
                     "status": "OK"
                 };
-                token = getRandomString(64);
-                MethodDB.setToken(knex, this_data, token);
                 
             })
             .catch((err) => {

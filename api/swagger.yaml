@@ -330,6 +330,9 @@ paths:
               status:
                 type: string
                 example: OK
+              token:
+                type: string
+                example: 83bbe2272f937025671443d78d204de5fa1cfe76360c8e9b3730cff191990fa0
               vol_id:
                 type: integer
                 format: int32
