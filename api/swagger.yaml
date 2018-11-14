@@ -1,7 +1,7 @@
 swagger: '2.0'
 info:
   description: API проекта "Голос поколения" для РКН и УМВД Липецкой области.
-  version: 1.4.0
+  version: 1.4.1
   title: API Voice Generation
   contact:
     email: antony.nor@yandex.ru
@@ -316,7 +316,7 @@ paths:
                 example: sergienko@gmail.com
               pass:
                 type: string
-                example: '93ab60127ca9c4fe7e0922ddddf91876'
+                example: 'P@ssword'
             xml:
               name: parameters
       responses:
@@ -1118,7 +1118,7 @@ definitions:
         example: 'sergienko@gmail.com'
       vol_pass:
         type: string
-        example: '93ab60127ca9c4fe7e0922ddddf91876'
+        example: 'P@ssword'
       vol_phone:
         type: string
         example: '9133501111'
