@@ -6,5 +6,7 @@ exports.accessCheck = function (knex, data) {
 };
 
 exports.insertQuote = function (knex, body) {
-    return knex('quotes').insert(body).returning('qot_id');
+    return knex('quotes').insert({qot_text: body.qot_text, qot_author: body.qot_author,
+        qot_textvisibility: body.qot_textvisibility, qot_imgsource: body.qot_imgsource,
+        qot_countlikes: body.qot_countlikes}).returning('qot_id');
 };
