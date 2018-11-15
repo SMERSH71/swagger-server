@@ -1,7 +1,7 @@
 swagger: '2.0'
 info:
   description: API проекта "Голос поколения" для РКН и УМВД Липецкой области.
-  version: 1.4.1
+  version: 1.5.0
   title: API Voice Generation
   contact:
     email: antony.nor@yandex.ru
@@ -477,6 +477,7 @@ paths:
             required:
               - qot_text
               - qot_imgsource
+              - token
             properties:
               qot_text:
                 type: string
@@ -490,6 +491,9 @@ paths:
               qot_imgsource:
                 type: string
                 example: 'http://voice-gen-220-900.appspot.com/quote1.jpg'
+              token:
+                type: string
+                example: 83bbe2272f937025671443d78d204de5fa1cfe76360c8e9b3730cff191990fa0
             xml:
               name: parameters
       responses:
@@ -926,17 +930,21 @@ paths:
       parameters:
         - in: body
           name: body
-          description: ID волонтера
+          description: ID волонтера и токен
           required: true
           schema:
             type: object
             required:
               - vol_id
+              - token
             properties:
               vol_id:
                 type: integer
                 format: int32
                 example: 2
+              token:
+                type: string
+                example: 83bbe2272f937025671443d78d204de5fa1cfe76360c8e9b3730cff191990fa0
             xml:
               name: parameters
       responses:
@@ -979,6 +987,7 @@ paths:
             required:
               - rqt_id
               - vol_id
+              - token
             properties:
               rqt_id:
                 type: integer
@@ -988,6 +997,9 @@ paths:
                 type: integer
                 format: int32
                 example: 2
+              token:
+                type: string
+                example: 83bbe2272f937025671443d78d204de5fa1cfe76360c8e9b3730cff191990fa0
             xml:
               name: parameters
       responses:
@@ -1109,6 +1121,7 @@ definitions:
       - vol_pasdateissued
       - vol_pasdeviscode
       - vol_admin
+      - token
     properties:
       vol_fullname:
         type: string
@@ -1149,6 +1162,9 @@ definitions:
       vol_admin:
         type: boolean
         example: false
+      token:
+        type: string
+        example: 83bbe2272f937025671443d78d204de5fa1cfe76360c8e9b3730cff191990fa0
     xml:
       name: volunteer
   request:

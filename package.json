@@ -1,6 +1,6 @@
 {
   "name": "api-voice-generation",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "API проекта \"Голос поколения\" для РКН и УМВД Липецкой области.",
   "main": "index.js",
   "scripts": {

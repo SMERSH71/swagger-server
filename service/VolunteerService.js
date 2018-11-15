@@ -1,5 +1,6 @@
 'use strict';
 const MethodDB = require('../db_method/MethodVolunteer');
+const MethodToken = require('../db_method/MethodToken');
 const knex = require('../index').knex;
 
 /**
@@ -17,7 +18,15 @@ exports.closeRequest = function (body) {
             "status": "SERVER ERROR"
         };
 
-        MethodDB.updStatus(knex, body.vol_id, body.rqt_id)
+        MethodToken.checkToken(knex, body.token)
+            .then((res) => {
+                if (res.length !== 0) {
+                    return MethodDB.updStatus(knex, body.vol_id, body.rqt_id);
+                }
+                else {
+                    throw new Error("Not Authorized");
+                }
+            })
             .then((res) => {
                 if (res === 0) throw new Error("Invalid Update");
                 console.log(TAG + " -> result: good");
@@ -63,9 +72,17 @@ exports.getRequest = function (body) {
             rqt_dt: null
         };
 
-        MethodDB.selectOldRequest(knex, body.vol_id)
+        MethodToken.checkToken(knex, body.token)
             .then((res) => {
-                if(res.length !== 0) return res;
+                if (res.length !== 0) {
+                    return MethodDB.selectOldRequest(knex, body.vol_id);
+                }
+                else {
+                    throw new Error("Not Authorized");
+                }
+            })
+            .then((res) => {
+                if (res.length !== 0) return res;
                 return MethodDB.selectRequest(knex);
             })
             .then((res) => {
@@ -82,7 +99,7 @@ exports.getRequest = function (body) {
             .then((res) => {
                 if (res.length === 0) throw new Error('Not Found Client');
                 data.client = res[0];
-                if(data.vol_id !== null) return 1;
+                if (data.vol_id !== null) return 1;
                 return MethodDB.insertVolInRqt(knex, body.vol_id, data.rqt_id);
             })
             .then((res) => {
