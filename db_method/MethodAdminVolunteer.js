@@ -8,7 +8,7 @@ exports.accessCheck = function (knex, data) {
 exports.setToken = function (knex, data, token) {
     knex('volunteer').update({vol_token: token})
     .where({vol_email: data.vol_email, vol_hashpass: data.vol_hashpass});    
-}
+};
 
 exports.insertQuote = function (knex, body) {
     return knex('quotes').insert(body).returning('qot_id');
