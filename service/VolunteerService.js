@@ -124,6 +124,12 @@ exports.getRequest = function (body) {
                     "request_data": null,
                     "status": "ERROR"
                 };
+                if (err.message === "Not Found Request") {
+                    result['application/json'] = {
+                        "request_data": null,
+                        "status": "NOT FOUND RQT"
+                    };
+                }
                 if (err.message === "Not Found Client") {
                     result['application/json'] = {
                         "request_data": null,
