@@ -470,7 +470,7 @@ paths:
       parameters:
         - in: body
           name: body
-          description: Данные цитаты
+          description: Данные цитаты и токен
           required: true
           schema:
             type: object
@@ -795,7 +795,7 @@ paths:
       parameters:
         - in: body
           name: body
-          description: Данные заявки
+          description: Данные заявки и параметр привязки диалога (да/нет)
           required: true
           schema:
             $ref: '#/definitions/request'
@@ -814,6 +814,10 @@ paths:
                 type: integer
                 format: int32
                 example: 3
+              dlg_id:
+                type: integer
+                format: int32
+                example: 4
             xml:
               name: response
         '400':
@@ -980,7 +984,7 @@ paths:
       parameters:
         - in: body
           name: body
-          description: ID волонтера
+          description: ID заявки, ID волонтера и токен
           required: true
           schema:
             type: object
@@ -1037,7 +1041,7 @@ paths:
       parameters:
         - in: body
           name: body
-          description: 'Данные волонтера/администратора'
+          description: 'Данные волонтера/администратора и токен администратора, который регистрирует нового волонтера'
           required: true
           schema:
             $ref: '#/definitions/volunteer'
@@ -1173,6 +1177,7 @@ definitions:
       - cli_id
       - rqt_url
       - rqt_imgsource
+      - dlg_create
     properties:
       cli_id:
         type: integer
@@ -1187,6 +1192,9 @@ definitions:
       rqt_imgsource:
         type: string
         example: 'http://voice-gen-220-900.appspot.com/screen1.jpg'
+      dlg_create:
+        type: boolean
+        example: true
     xml:
       name: request
   requestWithClient:

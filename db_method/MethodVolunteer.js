@@ -1,14 +1,13 @@
 'use strict';
 
-exports.selectOldRequest =function(knex, vol_id){
+exports.selectOldRequest = function (knex, vol_id) {
     let all_rqt = null;
     return knex.select().from(function () {
-        all_rqt = this.select().from('request').where('rqt_status', 1).as('all_rqt')
+        all_rqt = this.select().from('request').where('rqt_status', 1).where('vol_id', vol_id).as('all_rqt')
     })
         .where('rqt_dt', function () {
             this.min('rqt_dt').from(all_rqt)
-        })
-        .where('vol_id',vol_id);
+        });
 };
 
 exports.selectRequest = function (knex) {
@@ -23,7 +22,7 @@ exports.selectRequest = function (knex) {
 
 exports.insertVolInRqt = function (knex, vol_id, rqt_id) {
     return knex('request').update({vol_id: vol_id, rqt_status: 1})
-        .where({ rqt_id: rqt_id, vol_id: null, rqt_status: 0});
+        .where({rqt_id: rqt_id, vol_id: null, rqt_status: 0});
 };
 
 exports.selecClientInfo = function (knex, cli_id) {
@@ -32,5 +31,5 @@ exports.selecClientInfo = function (knex, cli_id) {
 };
 
 exports.updStatus = function (knex, vol_id, rqt_id) {
-    return knex('request').update('rqt_status', 2).where({ rqt_id: rqt_id, rqt_status: 1, vol_id: vol_id});
+    return knex('request').update('rqt_status', 2).where({rqt_id: rqt_id, rqt_status: 1, vol_id: vol_id});
 };

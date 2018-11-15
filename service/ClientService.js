@@ -236,37 +236,84 @@ exports.setRequest = function (body) {
         const result = {};
         result['application/json'] = {
             "rqt_id": null,
+            "dlg_id": null,
             "status": "SERVER ERROR"
         };
 
-        try {
-            MethodDB.insertRequest(knex, this_request)
-                .then((res) => {
+        let data = {
+            rqt_id: null,
+            dlg_id: null
+        };
+
+        const this_dialog = {
+            cli_id: body.cli_id,
+            dlg_begindt: new Date()
+        };
+
+        MethodDB.insertRequest(knex, this_request)
+            .then((res) => {
+                if (res.length === 0) throw new Error('Not Insert Request');
+                data.rqt_id = res[0];
+                if (body.dlg_create) {
+                    return MethodDB.insertDialog(knex, this_dialog);
+                }
+                else {
                     console.log(TAG + " -> result: good");
                     result['application/json'] = {
-                        "rqt_id": res[0],
+                        "rqt_id": data.rqt_id,
+                        "dlg_id": null,
                         "status": "OK"
                     };
-                })
-                .catch((err) => {
-                    console.error(TAG + " -> result: " + err);
+                }
+            })
+            .then((res) => {
+                if (res === undefined) return;
+                if (res.length === 0) throw new Error('Not Insert Dialog');
+                data.dlg_id = res[0];
+                return MethodDB.updRequestDlg(knex, data.dlg_id, data.rqt_id, body.cli_id);
+            })
+            .then((res) => {
+                if (res === undefined) return;
+                if (res === 0) throw new Error('Not Update Request');
+                console.log(TAG + " -> result: good");
+                result['application/json'] = {
+                    "rqt_id": data.rqt_id,
+                    "dlg_id": data.dlg_id,
+                    "status": "OK"
+                };
+            })
+            .catch((err) => {
+                console.error(TAG + " -> result: " + err);
+                result['application/json'] = {
+                    "rqt_id": null,
+                    "dlg_id": null,
+                    "status": "ERROR"
+                };
+                if (err.message === 'Not Insert Request') {
                     result['application/json'] = {
                         "rqt_id": null,
-                        "status": "ERROR"
+                        "dlg_id": null,
+                        "status": "INVALID ADD RQT"
                     };
-                })
-                .finally(() => {
-                    resolve(result[Object.keys(result)[0]]);
-                });
-        }
-        catch (err) {
-            result['application/json'] = {
-                "rqt_id": null,
-                "status": "SERVER ERROR"
-            };
-            console.error(TAG + " -> result: " + err);
-            reject(result[Object.keys(result)[0]]);
-        }
+                }
+                if (err.message === 'Not Insert Dialog') {
+                    result['application/json'] = {
+                        "rqt_id": null,
+                        "dlg_id": null,
+                        "status": "INVALID ADD DLG"
+                    };
+                }
+                if (err.message === 'Not Update Request') {
+                    result['application/json'] = {
+                        "rqt_id": null,
+                        "dlg_id": null,
+                        "status": "INVALID UPD RQT"
+                    };
+                }
+            })
+            .finally(() => {
+                resolve(result[Object.keys(result)[0]]);
+            });
     });
 };
 

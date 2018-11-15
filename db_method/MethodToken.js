@@ -7,4 +7,4 @@ exports.setToken = function (knex, data, token) {
 
 exports.checkToken = function (knex, token) {
     return knex.select().from('volunteer').where('vol_token', token);
-}
+};
